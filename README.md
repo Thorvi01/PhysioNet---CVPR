@@ -121,9 +121,9 @@ All intermediate results saved to `outputs/` folder
 
 Aleksei Anisimov: evaluation, implement the original solution
 
-Dishaa Bornare：data preprocessing
+Dishaa Bornare：Data Preparation, post-processing
 
-Cenling Gao : transformer-based segmentation model
+Cenling Gao : Segmentation model, transformer implementation
 
 
 
