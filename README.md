@@ -108,7 +108,6 @@ The idea: if we remove visual noise (grid, text) before feeding the image to the
 **Data preparation** (`01_data_preparation.py`):
 - Rectified all 977 training images through Stage 0+1
 - Wrote our own mask generation script (missing from someya's repo), verified round-trip error = 0.000000 mV
-- Fixed a bug: Lead II in the CSV has 10 seconds of data, but Row 1 on the image shows only 2.5 seconds — must truncate before mask creation
 - Key finding: even clean digital images (variant 0001) require rectification. Without Stage 0+1, the mask drifts from the signal.   
 [Prepared training data for training (0001-only for now)]() — 977 rectified images + masks + fold CSV
 
@@ -117,7 +116,7 @@ The idea: if we remove visual noise (grid, text) before feeding the image to the
 - Per-row crops (480×5600) instead of whole image — the whole-image approach gave ~0 dB SNR
 - ResNet18 UNet, 20 epochs, 977 images (variant 0001 only)
 - Result: **16.43 dB** mean SNR on validation   
- [Our trained weights]() — ResNet18 UNet, 16.43 dB
+ [Our trained weights](https://drive.google.com/file/d/1tO-GDZV8hUMGa7tb65ErSrcFIThc8UIG/view?usp=sharing) — ResNet18 UNet, 16.43 dB
 
 The 6.7 dB gap to the 2nd place single model (23.10 dB) is likely due to: smaller encoder (14M vs 43-66M parameters), fewer epochs (20 vs 50), less training data (1 variant vs 9), and no cross-lead fusion.
 
