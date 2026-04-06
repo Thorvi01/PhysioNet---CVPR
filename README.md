@@ -109,7 +109,7 @@ The idea: if we remove visual noise (grid, text) before feeding the image to the
 - Rectified all 977 training images through Stage 0+1
 - Wrote our own mask generation script (missing from someya's repo), verified round-trip error = 0.000000 mV
 - Key finding: even clean digital images (variant 0001) require rectification. Without Stage 0+1, the mask drifts from the signal.   
-[Prepared training data for training (0001-only for now)]() — 977 rectified images + masks + fold CSV
+[Prepared training data for training (0001-only for now)](https://www.kaggle.com/datasets/tylerde/ecg-training-data-0001-only/settings) — 977 rectified images + masks + fold CSV
 
 **Training** (`02_train_model.py`):
 - Cleaned images: removed pink grid via color filter (gray < 120 AND R-G < 10)
