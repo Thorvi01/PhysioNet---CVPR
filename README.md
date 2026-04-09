@@ -53,6 +53,11 @@ Before using any deep learning, we built a heuristic pipeline to understand ECG 
 
 This was not intended as a final solution — it helped us understand the image structure, what noise looks like, and where the challenges are.
 
+```bash
+# Classical CV pipeline
+python main.py
+```
+
 ### Step 2: Reproduce the 2nd Place Solution (23.38 dB)
 
 To establish a strong baseline, we reproduced the 2nd place competition solution using their published code and weights. File: `inference_baseline.py`.
@@ -89,45 +94,48 @@ Before training new models, we checked whether simply changing the post-processi
 
 Conclusion: the baseline resampling is already optimal. Filtering removes real signal content. Post-processing is not where the improvement lies.
 
-### Step 4: Train Our Own Segmentation
-
-Since preprocessing (Stage 0+1) works well, we kept it and focused on replacing Stage 2 with our own models.
-
-**Why we cannot replicate their full training**: their 6 models require 100+ GPU hours (Kaggle limit: 30h/week), and the full dataset (977 × 9 variants = 22 GB) exceeds Kaggle's 20 GB output limit.
+### Step 4: Our Pipeline
 
 We explored two alternative segmentation approaches:
 
-#### Approach A: Transformer Segmentation
+#### Approach A: Transformer-based model (Cenling)
 
 Replaced the convolutional segmentation with a Transformer-based model. Instead of a UNet encoder-decoder, the input image is split into patches and processed with a Transformer encoder to capture long-range spatial dependencies. The motivation is that ECG traces span the full image width, so global context through self-attention may help. File: `transformer_ecg_segmentation.py`.
 
-#### Approach B: Simple UNet on Cleaned Images
+#### Approach B: UNet (Aleksei)
 
-The idea: if we remove visual noise (grid, text) before feeding the image to the model, a simpler architecture might suffice.
+##### 1. Preprocessing (Stage 0 + Stage 1) — from hengck23 baseline
+I kept the existing preprocessing pipeline which converts messy ECG images into a standardized format:
+- Stage 0: Detects keypoints and orientation using a ResNet18 UNet, then applies homography to normalize the image.
+- Stage 1: Detects grid lines (44 horizontal, 57 vertical) using a ResNet34 UNet, then warps the image to a canonical 1700×2200 rectified output.
 
-**Data preparation** (`01_data_preparation.py`):
-- Rectified all 977 training images through Stage 0+1
-- Wrote our own mask generation script (missing from someya's repo), verified round-trip error = 0.000000 mV
-- Key finding: even clean digital images (variant 0001) require rectification. Without Stage 0+1, the mask drifts from the signal.   
-[Prepared training data for training (0001-only for now)](https://www.kaggle.com/datasets/tylerde/ecg-training-data-0001-only/settings) — 977 rectified images + masks + fold CSV
+After rectification, every image has the same geometry — signal baselines at known y-positions, signal region in columns 301–5300.
 
-**Training** (`02_train_model.py`):
-- Cleaned images: removed pink grid via color filter (gray < 120 AND R-G < 10)
-- Per-row crops (480×5600) instead of whole image — the whole-image approach gave ~0 dB SNR
-- ResNet18 UNet, 20 epochs, 977 images (variant 0001 only)
-- Result: **16.43 dB** mean SNR on validation   
- [Our trained weights](https://drive.google.com/file/d/1tO-GDZV8hUMGa7tb65ErSrcFIThc8UIG/view?usp=sharing) — ResNet18 UNet, 16.43 dB
+Storage Limitation Workaround
+The full dataset (977 images × 9 variants = ~60 GB) exceeds Kaggle's 20 GB output limit. I solved this by preprocessing in 5 separate batches:
 
-The 6.7 dB gap to the 2nd place single model (23.10 dB) is likely due to: smaller encoder (14M vs 43-66M parameters), fewer epochs (20 vs 50), less training data (1 variant vs 9), and no cross-lead fusion.
+| Batch | Segments | Description | Size |
+|-------|----------|-------------|------|
+| [batch1](https://www.kaggle.com/datasets/tylerde/ecg-training-data-0001-only) | 0001 | Clean digital renders | 6.1 GB |
+| [batch2](https://www.kaggle.com/datasets/tylerde/ecg-training-data-0003-0005-0006) | 0003, 0005, 0006 | Color scan, phone photo, screen photo | 20.5 GB |
+| [batch3](https://www.kaggle.com/datasets/tylerde/ecg-training-data-0004-0009) | 0004, 0009 | BW scan, stained/soaked prints | ~14 GB |
+| [batch4](https://www.kaggle.com/datasets/tylerde/ecg-training-data-0010-0011) | 0010, 0011 | Damaged prints, moldy color scans | ~14 GB |
+| [batch5](https://www.kaggle.com/datasets/tylerde/ecg-training-data-0012) | 0012 | Moldy BW scans | ~7 GB |
+
+Each batch is a self-contained dataset with identical structure: rectified images, sparse masks, ECG CSVs, and fold assignments.
+
+**All data was preprocessed and verified using two Kaggle notebooks: one for preprocessing and another for verification.**
+
+**In the verification notebook, three random samples were selected from each of the nine image variants. The signal masks were converted into pixel space and overlaid on the images. The results show a clear visual alignment, indicating that the masks correctly match the image signals.**
+
+[preprocessing script](https://www.kaggle.com/code/tylerde/ecg1-preprocess)
+[overlay verification and visualization script](https://www.kaggle.com/code/tylerde/ecg1-verify-overlay-all-batches)
+
+
 
 ---
 
 ## Usage
-
-```bash
-# Classical CV pipeline
-python main.py
-```
 
 ```bash
 # Kaggle notebooks (run in order with datasets attached):
