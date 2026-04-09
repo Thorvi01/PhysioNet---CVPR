@@ -128,8 +128,8 @@ Each batch is a self-contained dataset with identical structure: rectified image
 
 **In the verification notebook, three random samples were selected from each of the nine image variants. The signal masks were converted into pixel space and overlaid on the images. The results show a clear visual alignment, indicating that the masks correctly match the image signals.**
 
-[preprocessing script](https://www.kaggle.com/code/tylerde/ecg1-preprocess)
-[overlay verification and visualization script](https://www.kaggle.com/code/tylerde/ecg1-verify-overlay-all-batches)
+- [preprocessing script](https://www.kaggle.com/code/tylerde/ecg1-preprocess)   
+- [overlay verification and visualization script](https://www.kaggle.com/code/tylerde/ecg1-verify-overlay-all-batches)
 
 
 
