@@ -170,7 +170,7 @@ The model had never seen noisy/degraded images and couldn't generalize.
 
 **Phase 3 — Curriculum Fine-tuning (in progress)**
 
-To teach the model to handle all image types without massive GPU costs, we created a compact training dataset:
+To teach the model to handle all image types without massive GPU costs, I created a compact training dataset:
 - 200 random samples from each of the 9 image types = 1800 images
 - Fine-tune from best Phase 2 checkpoint (23.33 dB)
 - Lower learning rate (5e-5 vs 1e-4) to preserve learned features
