@@ -166,8 +166,6 @@ Despite 23.33 dB on clean validation data, the model scored only 3.0 dB on the r
 ```
 The model had never seen noisy/degraded images and couldn't generalize.
 
-- Inference code: https://www.kaggle.com/code/tylerde/ecg3-submit
-
 **Phase 3 — Curriculum Fine-tuning (in progress)**
 
 To teach the model to handle all image types without massive GPU costs, I created a compact training dataset:
