@@ -74,6 +74,10 @@ Submitted and confirmed: **23.27 public / 23.38 private LB**.
 - [hengck23 Stage 0+1 (Kaggle)](https://www.kaggle.com/datasets/hengck23/hengck23-demo-submit-physionet) — preprocessing models
 - [2nd place Stage 2 weights (Kaggle)](https://www.kaggle.com/datasets/takashisomeya/physionet-final-submission-models) — 6-model ensemble
 
+```bash
+# inference_baseline.py  # reproduce 2nd place submission
+```
+
 ### Step 3: Can We Improve Post-Processing?
 
 Before training new models, we checked whether simply changing the post-processing could improve results. Tested 4 resampling and 4 filtering methods on 5 samples using their pre-trained models:
@@ -141,7 +145,6 @@ First attempt: ResNet18 UNet with binary segmentation.
 # Kaggle notebooks (run in order with datasets attached):
 # 01_data_preparation.py # save output as dataset
 # 02_train_model.py      # train and evaluate
-# inference_baseline.py  # reproduce 2nd place submission
 ```
 
 **Phase 2 — Soft-Argmax + JSD Loss (23.33 dB)**
