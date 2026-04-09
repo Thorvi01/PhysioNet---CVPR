@@ -155,7 +155,7 @@ Applied key techniques:
 - ResNet34 backbone, 30 epochs, 977 clean images (0001 only)
 - Result: **23.33 dB** on validation — surpasses all top solutions' single model scores
 
-**First Submission — 3.0 dB on Leaderboard**   
+[**First Submission — 3.0 dB on Leaderboard**](https://www.kaggle.com/code/tylerde/ecg3-submit-model-0001)   
 
 Despite 23.33 dB on clean validation data, the model scored only 3.0 dB on the real test set. Investigation revealed the cause:
 ```
