@@ -24,13 +24,6 @@ The images are derived from the PTB-XL dataset (21,799 clinical 12-lead ECG sign
 - **Digital noise**: background text, redacted headers, varying grid opacities
 - **Layout**: standard 12-lead (3 rows × 4 columns) with Lead II rhythm strip at the bottom
 
-## Results
-
-| Approach | SNR (dB) |
-|----------|----------|
-| 2nd place reproduced (their weights, 6 models) | 23.38 |
-| Our UNet (ResNet18, per-row, cleaned images) | 16.43 |
-
 ---
 
 ## Research Steps
@@ -124,18 +117,25 @@ The full dataset (977 images × 9 variants = ~60 GB) exceeds Kaggle's 20 GB outp
 
 Each batch is a self-contained dataset with identical structure: rectified images, sparse masks, ECG CSVs, and fold assignments.
 
-**All data was preprocessed and verified using two Kaggle notebooks: one for preprocessing and another for verification.**
-
-**In the verification notebook, three random samples were selected from each of the nine image variants. The signal masks were converted into pixel space and overlaid on the images. The results show a clear visual alignment, indicating that the masks correctly match the image signals.**
+I wrote my own mask generation that converts ground-truth CSV values (millivolts) to pixel positions using the formula:
+```
+y_pixel = baseline - mV × 79.0
+```
+Sub-pixel accuracy via floor/ceil weighting, stored in sparse COO format. Verified with overlay visualizations — round-trip error is negligible.
 
 - [preprocessing script](https://www.kaggle.com/code/tylerde/ecg1-preprocess)   
 - [overlay verification and visualization script](https://www.kaggle.com/code/tylerde/ecg1-verify-overlay-all-batches)
 
+##### 1. Training (Stage 2) — Evolution of My Approach
 
+**Phase 1 — Simple UNet Baseline (16.43 dB)**
 
----
-
-## Usage
+First attempt: ResNet18 UNet with binary segmentation.
+- Cleaned images by removing pink grid via color filter
+- Per-row crops (480×5600) instead of whole image
+- BCE loss, 20 epochs, 977 images (variant 0001 only)
+- Result: **16.43 dB** on validation
+- Gap to top solutions: smaller encoder, fewer epochs, single variant, no regression head
 
 ```bash
 # Kaggle notebooks (run in order with datasets attached):
@@ -143,6 +143,42 @@ Each batch is a self-contained dataset with identical structure: rectified image
 # 02_train_model.py      # train and evaluate
 # inference_baseline.py  # reproduce 2nd place submission
 ```
+
+**Phase 2 — Soft-Argmax + JSD Loss (23.33 dB)**
+
+Applied key techniques:
+- **Row crops (480×5000):** crop each of 4 signal rows separately, centered on known baselines. Reduces input size 4x and simplifies the task — model only finds one trace per crop.
+- **Soft-argmax head:** instead of binary mask → argmax, predicts probability distribution over vertical axis, computes expected y-position. Differentiable, sub-pixel accurate.
+- **JSD + SNR combined loss:** JSD (Jensen-Shannon Divergence) teaches WHERE the signal is in pixel space. SNR loss directly optimizes the competition metric in millivolt space.
+- **CoordConv decoder:** injects y/x coordinates at every decoder level so model knows its spatial position.
+- Kept grid lines in the image (no cleaning) — top solutions found the grid carries useful calibration information.
+- ResNet34 backbone, 30 epochs, 977 clean images (0001 only)
+- Result: **23.33 dB** on validation — surpasses all top solutions' single model scores
+
+**First Submission — 3.0 dB on Leaderboard**   
+
+Despite 23.33 dB on clean validation data, the model scored only 3.0 dB on the real test set. Investigation revealed the cause:
+```
+0001 (clean):        22-30 dB ✓
+0003 (color scan):    7.2 dB  ✗
+0005 (phone photo): -12.1 dB  ✗
+0006 (screen photo): -5.1 dB  ✗
+```
+The model had never seen noisy/degraded images and couldn't generalize.
+
+- Inference code: https://www.kaggle.com/code/tylerde/ecg3-submit
+
+**Phase 3 — Curriculum Fine-tuning (in progress)**
+
+To teach the model to handle all image types without massive GPU costs, we created a compact training dataset:
+- 200 random samples from each of the 9 image types = 1800 images
+- Fine-tune from best Phase 2 checkpoint (23.33 dB)
+- Lower learning rate (5e-5 vs 1e-4) to preserve learned features
+- This is curriculum learning: first learn the core task on clean data, then adapt to noise
+
+Currently training. Expected result: significant improvement on degraded images while maintaining performance on clean ones.
+
+trainig code: https://github.com/Anisimov-AA/digitization-of-ECG-images
 
 ## Collaboration
 
