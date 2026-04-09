@@ -91,13 +91,13 @@ Conclusion: the baseline resampling is already optimal. Filtering removes real s
 
 We explored two alternative segmentation approaches:
 
-#### Approach A: Transformer-based model (Cenling)
+### Approach A: Transformer-based model (Cenling)
 
 Replaced the convolutional segmentation with a Transformer-based model. Instead of a UNet encoder-decoder, the input image is split into patches and processed with a Transformer encoder to capture long-range spatial dependencies. The motivation is that ECG traces span the full image width, so global context through self-attention may help. File: `transformer_ecg_segmentation.py`.
 
-#### Approach B: UNet (Aleksei)
+### Approach B: UNet (Aleksei)
 
-##### 1. Preprocessing (Stage 0 + Stage 1) — from hengck23 baseline
+#### 1. Preprocessing (Stage 0 + Stage 1) — from hengck23 baseline
 I kept the existing preprocessing pipeline which converts messy ECG images into a standardized format:
 - Stage 0: Detects keypoints and orientation using a ResNet18 UNet, then applies homography to normalize the image.
 - Stage 1: Detects grid lines (44 horizontal, 57 vertical) using a ResNet34 UNet, then warps the image to a canonical 1700×2200 rectified output.
@@ -126,7 +126,7 @@ Sub-pixel accuracy via floor/ceil weighting, stored in sparse COO format. Verifi
 - [preprocessing script](https://www.kaggle.com/code/tylerde/ecg1-preprocess)   
 - [overlay verification and visualization script](https://www.kaggle.com/code/tylerde/ecg1-verify-overlay-all-batches)
 
-##### 1. Training (Stage 2) — Evolution of My Approach
+#### 2. Training (Stage 2) — Evolution of My Approach
 
 **Phase 1 — Simple UNet Baseline (16.43 dB)**
 
