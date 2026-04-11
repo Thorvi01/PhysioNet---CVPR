@@ -131,6 +131,8 @@ Sub-pixel accuracy via floor/ceil weighting, stored in sparse COO format. Verifi
 - [overlay verification and visualization script](https://www.kaggle.com/code/tylerde/ecg1-verify-overlay-all-batches)
 
 #### 2. Training (Stage 2) — Evolution of My Approach
+Trainig code: https://github.com/Anisimov-AA/digitization-of-ECG-images   
+Inference code: https://www.kaggle.com/code/tylerde/ecg3-submit-model-0001
 
 **Phase 1 — Simple UNet Baseline (16.43 dB)**
 
@@ -147,7 +149,7 @@ First attempt: ResNet18 UNet with binary segmentation.
 # 02_train_model.py      # train and evaluate
 ```
 
-**Phase 2 — Soft-Argmax + JSD Loss (23.33 dB)**
+**Phase 2 — Soft-Argmax + JSD Loss**
 
 Applied key techniques:
 - **Row crops (480×5000):** crop each of 4 signal rows separately, centered on known baselines. Reduces input size 4x and simplifies the task — model only finds one trace per crop.
@@ -158,7 +160,7 @@ Applied key techniques:
 - ResNet34 backbone, 30 epochs, 977 clean images (0001 only)
 - Result: **23.33 dB** on validation — surpasses all top solutions' single model scores
 
-[**First Submission — 3.0 dB on Leaderboard**](https://www.kaggle.com/code/tylerde/ecg3-submit-model-0001)   
+**First Submission — 3.0 dB on Leaderboard**   
 
 Despite 23.33 dB on clean validation data, the model scored only 3.0 dB on the real test set. Investigation revealed the cause:
 ```
@@ -169,17 +171,30 @@ Despite 23.33 dB on clean validation data, the model scored only 3.0 dB on the r
 ```
 The model had never seen noisy/degraded images and couldn't generalize.
 
-**Phase 3 — Curriculum Fine-tuning (in progress)**
+**Phase 3 — Curriculum Fine-tuning**
 
 To teach the model to handle all image types without massive GPU costs, I created a compact training dataset:
 - 200 random samples from each of the 9 image types = 1800 images
-- Fine-tune from best Phase 2 checkpoint (23.33 dB)
+- Fine-tune from best Phase 2 checkpoint (23.33 dB), 30 epochs
 - Lower learning rate (5e-5 vs 1e-4) to preserve learned features
 - This is curriculum learning: first learn the core task on clean data, then adapt to noise
 
-Currently training. Expected result: significant improvement on degraded images while maintaining performance on clean ones.
+**Validation: 17.91 dB** (on all 9 image types)   
+**Submission: 17.0 dB** (Private: 16.95, Public: 17.13)   
 
-trainig code: https://github.com/Anisimov-AA/digitization-of-ECG-images
+**Phase 4 — Post-processing experiments (no retraining)**
+- Resampling fix (split-then-resample each lead): **Submission: 15.5 dB** — worse, model trained with old method
+- Einthoven's Law correction (II=I+III): **Submission: 15.5 dB** — worse, model not accurate enough for physics corrections
+- Conclusion: at 17 dB level, post-processing hurts. All gains must come from training.
+
+**Phase 5 — Grayscale + Augmentations + Adaptive Sigma (in progress)**
+Same 200×9 dataset, same Phase 2 checkpoint, but with training improvements:
+- Grayscale input: convert to gray, copy to 3 channels. Removes color as noise source — grid colors vary wildly across image types (pink, gray, absent) but signal is always dark on light.
+- Augmentations: random gamma (0.8–1.2), Gaussian blur (k=3,5), noise (σ=2–8), contrast shift. Each applied with 50% probability. Simulates degradation without needing more data.
+- Adaptive sigma: wider Gaussian target on sharp peaks where signal changes rapidly. From 3rd place solution — makes sharp peaks easier to learn.
+
+**Validation: TBD**   
+**Submission: TBD**   
 
 ## Collaboration
 
