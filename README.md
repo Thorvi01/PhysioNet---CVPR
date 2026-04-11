@@ -97,7 +97,105 @@ We explored two alternative segmentation approaches:
 
 ### Approach A: Transformer-based model (Cenling)
 
-Replaced the convolutional segmentation with a Transformer-based model. Instead of a UNet encoder-decoder, the input image is split into patches and processed with a Transformer encoder to capture long-range spatial dependencies. The motivation is that ECG traces span the full image width, so global context through self-attention may help. File: `transformer_ecg_segmentation.py`.
+Replaced the convolutional segmentation with a Transformer-based model. Instead of a UNet encoder-decoder, the input image is split into patches and processed with a Transformer encoder to capture long-range spatial dependencies. The motivation is that ECG traces span the full image width, so global context through self-attention may help.
+
+
+1. Training — Transformer-based Segmentation
+
+Unlike the UNet-based approach used by other team members, this approach replaces the segmentation backbone with a Vision Transformer (ViT)-style model.
+
+#### Model Design
+
+The model consists of three main components:
+
+* Patch Embedding:
+The input image (resized to 512×512) is divided into non-overlapping patches (16×16), each projected into a 256-dimensional embedding space.
+* Transformer Encoder:
+A stack of 4 Transformer encoder layers (multi-head self-attention) processes the sequence of patch embeddings, enabling global context modeling.
+* Decoder:
+A transposed convolution layer upsamples the Transformer output back to spatial resolution to produce a segmentation mask.
+
+This design allows the model to capture long-range dependencies, which is theoretically beneficial for ECG signals spanning horizontally across the image.
+
+#### Training Setup
+
+* Dataset: 977 rectified ECG images (clean variant only)
+* Input size: 512 × 512
+* Loss function: Binary Cross Entropy (BCEWithLogitsLoss)
+* Optimizer: Adam (lr = 1e-4)
+* Batch size: 2
+* Epochs: 3
+
+#### Training Results
+* Samples: 977
+* Epoch 1, Loss: 0.0799
+* Epoch 2, Loss: 0.0075
+* Epoch 3, Loss: 0.0051
+
+#### Analysis of Training Behavior
+
+The training loss decreases rapidly:
+
+From 0.0799 → 0.0051 in just 3 epochs
+Indicates the model quickly fits the segmentation task.
+
+This suggests:
+
+* The model successfully learns pixel-level reconstruction of ECG traces
+* The dataset (clean images only) is relatively easy for segmentation
+* Transformer has sufficient capacity for this task
+
+However, this also hints at possible overfitting, since training data is limited (977 samples)
+No noisy or degraded image variants are included
+No validation metric was tracked.
+
+2. Inference and Submission Pipeline
+
+For submission, the trained Transformer model was used to generate segmentation masks on the test set.
+
+However, instead of reconstructing ECG waveforms from the predicted masks, a dummy signal was used:
+
+signal = np.zeros(num_rows)
+
+This was done to:
+
+* Validate the end-to-end submission pipeline
+* Ensure correct formatting of submission.csv
+
+#### Submission Results
+   Public Score: 0.09360
+   Private Score: 0.10574
+
+#### Analysis of Results
+
+(1) Missing Signal Reconstruction Step
+
+The competition evaluates numerical ECG signals, not segmentation masks. As a result:
+The predicted masks are completely ignored
+Submission contains no meaningful ECG information. 
+This is the primary reason for the low score.
+
+(2) Lack of Generalization to Noisy Data
+
+The test set includes: Scanned images， Mobile photos and Damaged ECG prints.
+Transformer models generally require larger datasets and strong augmentation.
+Without exposure to noisy data, the model likely:
+Overfits clean patterns
+Fails on real-world distortions
+
+#### Future Improvements
+
+To make this approach competitive, the following steps are required:
+
+(1) Integrate Signal Reconstruction (Critical)
+
+(2) Train on Multi-Variant Data
+
+(3) Add Data Augmentation
+
+(4) Use Signal-aware Loss
+
+(5) Increase Model Capacity and Training Time
 
 ### Approach B: UNet (Aleksei)
 
