@@ -99,6 +99,9 @@ We explored two alternative segmentation approaches:
 
 Replaced the convolutional segmentation with a Transformer-based model. Instead of a UNet encoder-decoder, the input image is split into patches and processed with a Transformer encoder to capture long-range spatial dependencies. The motivation is that ECG traces span the full image width, so global context through self-attention may help.
 
+Files: 
+* ecg-transformer-based.py: notebook1, training
+* ecg-transformer-based-submission.py: notebook2, generate submission.csv
 
 1. Training — Transformer-based Segmentation
 
@@ -306,7 +309,7 @@ Aleksei Anisimov: evaluation of 2nd place solution, reproduction, data preparati
 
 Dishaa Bornare: data preparation, post-processing
 
-Cenling Gao: segmentation model, transformer implementation
+Cenling Gao: segmentation model, transformer approach implementation, training on kaggle, generate submission.csv, report about transformer part
 
 ## References
 
