@@ -134,6 +134,12 @@ Sub-pixel accuracy via floor/ceil weighting, stored in sparse COO format. Verifi
 Trainig code: https://github.com/Anisimov-AA/digitization-of-ECG-images   
 Inference code: https://www.kaggle.com/code/tylerde/ecg3-submit-model-0001
 
+Training Strategy:   
+Stage A: Train on 977 clean images → model learns signal patterns   
+Stage B: Fine-tune on 200×9 mixed types → model learns noise robustness   
+Stage C: Full dataset (977×9) → maximum data coverage   
+Stage D: Upgrade backbone → more capacity if needed   
+   
 **Phase 1 — Simple UNet Baseline (16.43 dB)**
 
 First attempt: ResNet18 UNet with binary segmentation.
@@ -171,7 +177,7 @@ Despite 23.33 dB on clean validation data, the model scored only 3.0 dB on the r
 ```
 The model had never seen noisy/degraded images and couldn't generalize.
 
-**Phase 3 — Curriculum Fine-tuning**
+**Phase 3 — Curriculum Fine-tuning**   
 
 To teach the model to handle all image types without massive GPU costs, I created a compact training dataset:
 - 200 random samples from each of the 9 image types = 1800 images
@@ -187,7 +193,7 @@ To teach the model to handle all image types without massive GPU costs, I create
 - Einthoven's Law correction (II=I+III): **Submission: 15.5 dB** — worse, model not accurate enough for physics corrections
 - Conclusion: at 17 dB level, post-processing hurts. All gains must come from training.
 
-**Phase 5 — Grayscale + Augmentations + Adaptive Sigma (in progress)**
+**Phase 5 — Grayscale + Augmentations + Adaptive Sigma (in progress)**   
 Same 200×9 dataset, same Phase 2 checkpoint, but with training improvements:
 - Grayscale input: convert to gray, copy to 3 channels. Removes color as noise source — grid colors vary wildly across image types (pink, gray, absent) but signal is always dark on light.
 - Augmentations: random gamma (0.8–1.2), Gaussian blur (k=3,5), noise (σ=2–8), contrast shift. Each applied with 50% probability. Simulates degradation without needing more data.
