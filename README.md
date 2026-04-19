@@ -53,7 +53,7 @@ python main.py
 
 ### Step 2: Reproduce the 2nd Place Solution (23.38 dB)
 
-To establish a strong baseline, we reproduced the 2nd place competition solution using their published code and weights. File: `inference_baseline.py`.
+To establish a strong baseline, I reproduced the 2nd place competition solution using their published code and weights.
 
 We assembled the pipeline from two sources:
 - **Stage 0+1** (preprocessing): hengck23's keypoint detection + grid rectification
@@ -74,13 +74,11 @@ Submitted and confirmed: **23.27 public / 23.38 private LB**.
 - [hengck23 Stage 0+1 (Kaggle)](https://www.kaggle.com/datasets/hengck23/hengck23-demo-submit-physionet) — preprocessing models
 - [2nd place Stage 2 weights (Kaggle)](https://www.kaggle.com/datasets/takashisomeya/physionet-final-submission-models) — 6-model ensemble
 
-```bash
-# inference_baseline.py  # reproduce 2nd place submission
-```
+[reproduce 2nd place submission](https://www.kaggle.com/code/tylerde/ecg-check-weights)
 
 ### Step 3: Can We Improve Post-Processing?
 
-Before training new models, we checked whether simply changing the post-processing could improve results. Tested 4 resampling and 4 filtering methods on 5 samples using their pre-trained models:
+Before training new models, I checked whether simply changing the post-processing could improve results. Tested 4 resampling and 4 filtering methods on 5 samples using their pre-trained models:
 
 | Method | SNR (dB) |
 |--------|----------|
@@ -235,13 +233,7 @@ Sub-pixel accuracy via floor/ceil weighting, stored in sparse COO format. Verifi
 Trainig code: https://github.com/Anisimov-AA/digitization-of-ECG-images   
 Inference code: https://www.kaggle.com/code/tylerde/ecg3-submit-model-0001
 
-Training Strategy:   
-Stage A: Train on 977 clean images → model learns signal patterns   
-Stage B: Fine-tune on 200×9 mixed types → model learns noise robustness   
-Stage C: Full dataset (977×9) → maximum data coverage   
-Stage D: Upgrade backbone → more capacity if needed   
-   
-**Phase 1 — Simple UNet Baseline (16.43 dB)**
+**2.1. Phase 1 — Simple UNet Baseline (16.43 dB)**
 
 First attempt: ResNet18 UNet with binary segmentation.
 - Cleaned images by removing pink grid via color filter
@@ -256,7 +248,7 @@ First attempt: ResNet18 UNet with binary segmentation.
 # 02_train_model.py      # train and evaluate
 ```
 
-**Phase 2 — Soft-Argmax + JSD Loss**
+**2.2. Phase 2 — Soft-Argmax + JSD Loss**
 
 Applied key techniques:
 - **Row crops (480×5000):** crop each of 4 signal rows separately, centered on known baselines. Reduces input size 4x and simplifies the task — model only finds one trace per crop.
@@ -278,7 +270,7 @@ Despite 23.33 dB on clean validation data, the model scored only 3.0 dB on the r
 ```
 The model had never seen noisy/degraded images and couldn't generalize.
 
-**Phase 3 — Curriculum Fine-tuning**   
+**2.3. Phase 3 — Curriculum Fine-tuning**   
 
 To teach the model to handle all image types without massive GPU costs, I created a compact training dataset:
 - 200 random samples from each of the 9 image types = 1800 images
@@ -289,12 +281,12 @@ To teach the model to handle all image types without massive GPU costs, I create
 **Validation: 17.91 dB** (on all 9 image types)   
 **Submission: 17.0 dB** (Private: 16.95, Public: 17.13)   
 
-**Phase 4 — Post-processing experiments (no retraining)**
+**2.4. Phase 4 — Post-processing experiments (no retraining)**
 - Resampling fix (split-then-resample each lead): **Submission: 15.5 dB** — worse, model trained with old method
 - Einthoven's Law correction (II=I+III): **Submission: 15.5 dB** — worse, model not accurate enough for physics corrections
 - Conclusion: at 17 dB level, post-processing hurts. All gains must come from training.
 
-**Phase 5 — Grayscale + Augmentations + Adaptive Sigma**   
+**2.5. Phase 5 — Grayscale + Augmentations + Adaptive Sigma**   
 Same 200×9 dataset, same Phase 2 checkpoint, but with training improvements:
 - Grayscale input: convert to gray, copy to 3 channels. Removes color as noise source — grid colors vary wildly across image types (pink, gray, absent) but signal is always dark on light.
 - Augmentations: random gamma (0.8–1.2), Gaussian blur (k=3,5), noise (σ=2–8), contrast shift. Each applied with 50% probability. Simulates degradation without needing more data.
@@ -303,7 +295,7 @@ Same 200×9 dataset, same Phase 2 checkpoint, but with training improvements:
 **Submission: 15.19**   
 Made it worse — augmentations added noise.
 
-**Phase 6 — Full dataset 977×9**
+**2.6. Phase 6 — Full dataset 977×9**
 
 **Submission: 19.35**   
 Our best. Same model as in  Phase 3, 5× more data
