@@ -294,14 +294,19 @@ To teach the model to handle all image types without massive GPU costs, I create
 - Einthoven's Law correction (II=I+III): **Submission: 15.5 dB** — worse, model not accurate enough for physics corrections
 - Conclusion: at 17 dB level, post-processing hurts. All gains must come from training.
 
-**Phase 5 — Grayscale + Augmentations + Adaptive Sigma (in progress)**   
+**Phase 5 — Grayscale + Augmentations + Adaptive Sigma**   
 Same 200×9 dataset, same Phase 2 checkpoint, but with training improvements:
 - Grayscale input: convert to gray, copy to 3 channels. Removes color as noise source — grid colors vary wildly across image types (pink, gray, absent) but signal is always dark on light.
 - Augmentations: random gamma (0.8–1.2), Gaussian blur (k=3,5), noise (σ=2–8), contrast shift. Each applied with 50% probability. Simulates degradation without needing more data.
 - Adaptive sigma: wider Gaussian target on sharp peaks where signal changes rapidly. From 3rd place solution — makes sharp peaks easier to learn.
 
-**Validation: TBD**   
-**Submission: TBD**   
+**Submission: 15.19**   
+Made it worse — augmentations added noise.
+
+**Phase 6 — Full dataset 977×9**
+
+**Submission: 19.35**   
+Our best. Same model as in  Phase 3, 5× more data
 
 ## Collaboration
 
